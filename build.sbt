@@ -13,6 +13,12 @@ scalacOptions ++= Seq(
   "-unchecked"
 )
 
+libraryDependencies ++= Vector(
+  "org.typelevel" %% "cats-core" % "2.12.0",
+  "org.scalatest" %% "scalatest" % "3.2.19" % Test,
+  "org.scalamock" %% "scalamock" % "6.0.0" % Test
+)
+
 Test / test :=
   (Test / test)
     .dependsOn(Compile / scalafmtCheck)
