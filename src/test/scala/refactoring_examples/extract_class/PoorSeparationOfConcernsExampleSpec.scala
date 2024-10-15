@@ -5,22 +5,12 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.freespec.AnyFreeSpecLike
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
-import refactoring_examples.extract_class.dependencies.NormalUserTrustLevel.{
-  FriendlyWetWorkOperative,
-  NonCombatant,
-  PossibleEnemySpy
-}
+import refactoring_examples.ActionSuccess
+import refactoring_examples.extract_class.dependencies.*
+import refactoring_examples.extract_class.dependencies.NormalUserTrustLevel.*
 import refactoring_examples.extract_class.dependencies.OperatingMode.{OperatingMode1, OperatingMode2, OperatingMode3}
 import refactoring_examples.extract_class.dependencies.User.UserId
-import refactoring_examples.extract_class.dependencies.errors.{
-  ExampleError,
-  ExpectedUserNotFound,
-  FailedSendingSummarisedFinancialData,
-  FailedSummarisingFinancialData,
-  FailedValidatingUserWithOperatingMode,
-  ServiceFailedInAttemptingUserRetrievalError
-}
-import refactoring_examples.extract_class.dependencies.{FinancialSystemsError, *}
+import refactoring_examples.extract_class.errors.*
 
 import java.time.{Clock, Instant, Period}
 
@@ -148,22 +138,25 @@ class PoorSeparationOfConcernsExampleSpec
             .expects()
             .returns(currentInstant)
 
+          val summarizedAccountDetails =
+            SummarizedAccountDetails(user, startOfExpectedSummarization, expectedSentDetails)
+
           summarizationReportingService.sendSummarization
             .expects(
-              SummarizedAccountDetails(user, startOfExpectedSummarization, expectedSentDetails)
+              summarizedAccountDetails
             )
-            .returns(Right(true))
+            .returns(Right(ActionSuccess))
 
           auditingService.recordSuccessfulSummarization
             .expects(user.userId.value, startOfExpectedSummarization)
-            .returns(Right(true))
+            .returns(Right(ActionSuccess))
 
           val errorOrCount =
             poorSeparationOfConcernsExample.sendSummarization(user.userId.value, operatingMode, maxDaysToProcess)
 
           // Calculating the count here is a hacky, better to pass it in to be able to summarise easily
           // It is the variance of state and the consequences of it that we are testing
-          errorOrCount.remapLeftToClass shouldBe Right(SummarizationCount(expectedSummarizedStatementCombinations.size))
+          errorOrCount.remapLeftToClass shouldBe Right(summarizedAccountDetails)
         }
       }
 
@@ -279,11 +272,11 @@ class PoorSeparationOfConcernsExampleSpec
         }
 
         def assertOperatingModeUserValidationFailure(
-            errorOrCount: Either[ExampleError, SummarizationCount],
+            errorOrSummarizedAccountDetails: Either[ExampleError, SummarizedAccountDetails],
             expectedHasFailedAuditing: Boolean
         )(implicit pos: Position) = {
           prettyWithClue("expected the audit failure state to be") {
-            errorOrCount match {
+            errorOrSummarizedAccountDetails match {
               case Left(exampleError: ExampleError) =>
                 exampleError match {
                   case correctFailure: FailedValidatingUserWithOperatingMode =>
@@ -295,7 +288,7 @@ class PoorSeparationOfConcernsExampleSpec
                 }
               case _ =>
                 // again just a nicer error
-                errorOrCount.remapLeftToClass shouldBe Left(a[FailedValidatingUserWithOperatingMode])
+                errorOrSummarizedAccountDetails.remapLeftToClass shouldBe Left(a[FailedValidatingUserWithOperatingMode])
             }
           }
         }
@@ -340,7 +333,7 @@ class PoorSeparationOfConcernsExampleSpec
               .returns(Right(Some(normalSpyUser)))
 
             auditingService.recordNormalUserAttemptedInvalidAction
-              .expects(normalSpyUser, InvalidNormalUserInteraction())
+              .expects(normalSpyUser, InvalidNormalUserInteraction(OperatingMode1))
               .returns(recordingFailureResult)
 
             val errorOrCount =
@@ -371,21 +364,21 @@ class PoorSeparationOfConcernsExampleSpec
           )
 
           forAll(recordingFailureOptions) {
-            (recordingFailureResult, expectedHasFailedAuditing, nonWetWorkOperatingMode: NormalUserTrustLevel) =>
+            (recordingFailureResult, expectedHasFailedAuditing, nonWetWorkOperatingMode) =>
               val nonSpyNormalUser = createNormalUser(nonWetWorkOperatingMode)
               userService.getUser
                 .expects(nonSpyNormalUser.userId.value)
                 .returns(Right(Some(nonSpyNormalUser)))
 
               auditingService.recordNormalUserAttemptedInvalidAction
-                .expects(nonSpyNormalUser, InvalidNormalUserInteraction())
+                .expects(nonSpyNormalUser, InvalidNormalUserInteraction(OperatingMode2))
                 .returns(recordingFailureResult)
 
-              val errorOrCount =
+              val errorOrSummarizedAccountDetails =
                 poorSeparationOfConcernsExample.sendSummarization(nonSpyNormalUser.userId.value, OperatingMode2, 33)
 
               assertOperatingModeUserValidationFailure(
-                errorOrCount,
+                errorOrSummarizedAccountDetails,
                 expectedHasFailedAuditing = expectedHasFailedAuditing
               )
           }

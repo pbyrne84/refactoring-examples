@@ -3,43 +3,9 @@ package refactoring_examples.extract_class
 import refactoring_examples.extract_class.dependencies.*
 import refactoring_examples.extract_class.dependencies.NormalUserTrustLevel.{FriendlyWetWorkOperative, PossibleEnemySpy}
 import refactoring_examples.extract_class.dependencies.OperatingMode.*
-import refactoring_examples.extract_class.dependencies.User.UserId
-import refactoring_examples.extract_class.dependencies.errors.{
-  ExampleError,
-  ExpectedUserNotFound,
-  FailedSendingSummarisedFinancialData,
-  FailedSummarisingFinancialData,
-  FailedValidatingUserWithOperatingMode,
-  InvalidAdminUserOperationModeError,
-  InvalidNormalUserOperationModeError,
-  InvalidUserOperationModeError,
-  ServiceFailedInAttemptingUserRetrievalError
-}
+import refactoring_examples.extract_class.errors.*
 
 import java.time.{Clock, Instant, Period}
-
-//I don't really like returning unit, it also can unflattened side affecting futures.
-// Future[Unit] hides Future[Future[Int]] and it will run in the background, potentially finishing after the call
-// responds hiding its failure.
-case object ActionSuccess
-
-sealed abstract class SummarizationDataError(message: String) extends RuntimeException(message)
-
-case class InvalidTooManyAccountIdsAccountDetailsError(userId: UserId, accountIds: List[Int])
-    extends SummarizationDataError(s"For user $userId there should only be one account id found, received $accountIds")
-
-case class InvalidUserIdsReturnedInAccountDetailsError(userId: UserId, invalidUserIds: List[Int])
-    extends SummarizationDataError(
-      s"For user $userId only its account details should be returned, received them for the following ids $invalidUserIds"
-    )
-
-opaque type SummarizationCount = Int
-object SummarizationCount {
-  def apply(count: Int): SummarizationCount = count
-  extension (summarizationCount: SummarizationCount) {
-    def value: Int = summarizationCount
-  }
-}
 
 //The number of constructor params should be a warning if there is conditional logic
 class PoorSeparationOfConcernsExample(
@@ -53,7 +19,7 @@ class PoorSeparationOfConcernsExample(
       userId: Int,
       operatingMode: OperatingMode,
       maxDaysToProcess: Int
-  ): Either[ExampleError, SummarizationCount] = {
+  ): Either[ExampleError, SummarizedAccountDetails] = {
 
     for {
       maybeUser <- userService
@@ -68,10 +34,10 @@ class PoorSeparationOfConcernsExample(
       summarisedAccountDetails <- getCurrentFinancialDetailsSummarization(user, maxDaysToProcess).left.map(error =>
         FailedSummarisingFinancialData(user, error)
       )
-      sentSummarizationCount <- sendPossibleSummarizedAccountDetails(user, summarisedAccountDetails).left.map(error =>
+      _ <- sendPossibleSummarizedAccountDetails(user, summarisedAccountDetails).left.map(error =>
         FailedSendingSummarisedFinancialData(user, error)
       )
-    } yield sentSummarizationCount
+    } yield summarisedAccountDetails
   }
 
   /** This is an area of high complexity, prime extraction candidacy to its own class It does branch off into private
@@ -158,7 +124,9 @@ class PoorSeparationOfConcernsExample(
       case _ =>
         // Usually you would log the error and not just discard it, unless you want to be mean that is
         val hasFailedRecordingAudit =
-          auditingService.recordNormalUserAttemptedInvalidAction(normalUser, InvalidNormalUserInteraction()).isLeft
+          auditingService
+            .recordNormalUserAttemptedInvalidAction(normalUser, InvalidNormalUserInteraction(operatingMode))
+            .isLeft
 
         Left(
           InvalidNormalUserOperationModeError(
@@ -238,14 +206,14 @@ class PoorSeparationOfConcernsExample(
   private def sendPossibleSummarizedAccountDetails(
       user: User,
       summarisedAccountDetails: SummarizedAccountDetails
-  ): Either[Throwable, SummarizationCount] = {
+  ): Either[Throwable, SummarizedAccountDetails] = {
 
     summarizationReportingService
       .sendSummarization(summarisedAccountDetails)
       .flatMap { _ =>
         auditingService.recordSuccessfulSummarization(user.userId.value, summarisedAccountDetails.startingInstant)
       }
-      .map(_ => SummarizationCount(summarisedAccountDetails.financialDetails.size))
+      .map(_ => summarisedAccountDetails)
 
   }
 }
