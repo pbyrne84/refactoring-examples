@@ -18,7 +18,7 @@ import refactoring_examples.extract_class.refactored_components.{
 
 import java.time.{Clock, Instant, Period}
 
-class PoorSeparationOfConcernsExampleRefactorSpec
+class PoorSeparationOfConcernsExampleRefactoredSpec
     extends AnyFreeSpecLike
     with TableDrivenPropertyChecks
     with MockFactory
@@ -34,7 +34,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
     mock[SummarizationReportingService]
   private val failureRecordingUserValidation = mock[FailureRecordingUserValidation]
 
-  private val separationOfConcernsExampleRefactor = new PoorSeparationOfConcernsExampleRefactor(
+  private val separationOfConcernsExampleRefactored = new PoorSeparationOfConcernsExampleRefactored(
     userService,
     auditingService,
     failureRecordingUserValidation,
@@ -118,7 +118,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
           .expects(user.userId.value, summarizationStartDate)
           .returns(Right(ActionSuccess))
 
-        separationOfConcernsExampleRefactor.sendSummarization(
+        separationOfConcernsExampleRefactored.sendSummarization(
           user.userId.value,
           OperatingMode1,
           maxDaysToProcess = maxDaysToProcess
@@ -139,7 +139,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(userId.value)
             .returns(Left(new RuntimeException("failed connecting to user service")))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, 33)
             .remapLeftToClass shouldBe
             Left(classOf[ServiceFailedInAttemptingUserRetrievalError])
@@ -150,7 +150,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(userId.value)
             .returns(Right(None))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, 33)
             .remapLeftToClass shouldBe
             Left(classOf[ExpectedUserNotFound])
@@ -168,7 +168,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(OperatingMode3, user)
             .returns(Left(InvalidNormalUserOperationModeError(user, OperatingMode3, true)))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, maxDaysToProcess)
             .remapLeftToClass shouldBe
             Left(classOf[FailedValidatingUserWithOperatingMode])
@@ -190,7 +190,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(user, maxDaysToProcess)
             .returns(Left(new RuntimeException("failed summarization")))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, maxDaysToProcess)
             .remapLeftToClass shouldBe
             Left(classOf[FailedSummarisingFinancialData])
@@ -221,7 +221,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(summarisedDetails)
             .returns(Left(new RuntimeException("failed sending summarization")))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, maxDaysToProcess)
             .remapLeftToClass shouldBe
             Left(classOf[FailedSendingSummarisedFinancialData])

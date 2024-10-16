@@ -23,7 +23,7 @@ import refactoring_examples.extract_class.refactored_components.{
  * @param financialDetailsSummarization
  * @param summarizationReportingService
  */
-class PoorSeparationOfConcernsExampleRefactor(
+class PoorSeparationOfConcernsExampleRefactored(
     userService: UserService,
     auditingService: AuditingService,
     failureRecordingUserValidation: FailureRecordingUserValidation,
