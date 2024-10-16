@@ -1,24 +1,93 @@
-package refactoring_examples.extract_class
+# Production Code With Test Refactored 
 
-import org.scalactic.source.Position
-import org.scalamock.scalatest.MockFactory
-import org.scalatest.freespec.AnyFreeSpecLike
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.prop.TableDrivenPropertyChecks
-import refactoring_examples.ActionSuccess
-import refactoring_examples.extract_class.dependencies.*
-import refactoring_examples.extract_class.dependencies.NormalUserTrustLevel.*
-import refactoring_examples.extract_class.dependencies.OperatingMode.{OperatingMode1, OperatingMode3}
-import refactoring_examples.extract_class.dependencies.User.UserId
-import refactoring_examples.extract_class.errors.*
-import refactoring_examples.extract_class.refactored_components.{
-  FailureRecordingUserValidation,
-  FinancialDetailsSummarization
+## Production code after refactor
+
+[PoorSeparationOfConcernsExampleRefactored.scala](../src/main/scala/refactoring_examples/extract_class/PoorSeparationOfConcernsExampleRefactored.scala)
+
+Note the call chain is linear, the only operations we are doing is a call and then an error remapping. We no longer 
+need any real complexity in the test. The complexity has been split up and refactored out into clear responsibilities
+that have some room to grow. Though they will likely turn to mess as well over time, so we always need to keep pruning 
+and keep things looking healthy :) 
+
+```scala
+class PoorSeparationOfConcernsExampleRefactored(
+    userService: UserService,
+    auditingService: AuditingService,
+    failureRecordingUserValidation: FailureRecordingUserValidation,
+    financialDetailsSummarization: FinancialDetailsSummarization,
+    summarizationReportingService: SummarizationReportingService
+) {
+
+  def sendSummarization(
+      userId: Int,
+      operatingMode: OperatingMode,
+      maxDaysToProcess: Int
+  ): Either[ExampleError, SummarizedAccountDetails] = {
+    for {
+      // all calls are very high level (compose method)
+      user <- attemptRetrievingUser(userId)
+      _ <- attemptUserValidation(operatingMode, user)
+      summarisedAccountDetails <- attemptFinancialSummarization(maxDaysToProcess, user)
+      _ <- attemptSendingSummarization(user, summarisedAccountDetails)
+    } yield summarisedAccountDetails
+  }
+
+  private def attemptRetrievingUser(userId: Int): Either[ExampleError, User] = {
+    for {
+      maybeUser <- userService
+        .getUser(userId)
+        .left
+        .map(error => ServiceFailedInAttemptingUserRetrievalError(userId, error))
+
+      user <- maybeUser.map(Right.apply).getOrElse(Left(ExpectedUserNotFound(userId)))
+    } yield user
+  }
+
+  private def attemptUserValidation(
+      operatingMode: OperatingMode,
+      user: User
+  ): Either[FailedValidatingUserWithOperatingMode, ActionSuccess.type] = {
+    failureRecordingUserValidation
+      .validateUserAgainstOperatingMode(operatingMode, user)
+      .left
+      .map((error: InvalidUserOperationModeError) => FailedValidatingUserWithOperatingMode(user, operatingMode, error))
+  }
+
+  private def attemptFinancialSummarization(
+      maxDaysToProcess: Int,
+      user: User
+  ): Either[FailedSummarisingFinancialData, SummarizedAccountDetails] = {
+    financialDetailsSummarization
+      .calculateCurrentFinancialDetailsSummarization(user, maxDaysToProcess)
+      .left
+      .map(error => FailedSummarisingFinancialData(user, error))
+  }
+
+  private def attemptSendingSummarization(
+      user: User,
+      summarisedAccountDetails: SummarizedAccountDetails
+  ): Either[FailedSendingSummarisedFinancialData, ActionSuccess.type] = {
+    summarizationReportingService
+      .sendSummarization(summarisedAccountDetails)
+      .flatMap { _ =>
+        auditingService.recordSuccessfulSummarization(user.userId.value, summarisedAccountDetails.startingInstant)
+      }
+      .map(_ => ActionSuccess)
+      .left
+      .map(error => FailedSendingSummarisedFinancialData(user, error))
+  }
 }
+```
 
-import java.time.{Clock, Instant, Period}
+## Test code after refactor
 
-class PoorSeparationOfConcernsExampleRefactorSpec
+[PoorSeparationOfConcernsExampleRefactoredSpec.scala](../src/test/scala/refactoring_examples/extract_class/PoorSeparationOfConcernsExampleRefactoredSpec.scala)
+
+Again, simple enough not to require any complicated contexts, I personally never use them as they seem too much of a crutch for bad design
+and end up hiding everything in them making things much worse.
+
+```scala
+class PoorSeparationOfConcernsExampleRefactoredSpec
     extends AnyFreeSpecLike
     with TableDrivenPropertyChecks
     with MockFactory
@@ -34,7 +103,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
     mock[SummarizationReportingService]
   private val failureRecordingUserValidation = mock[FailureRecordingUserValidation]
 
-  private val separationOfConcernsExampleRefactor = new PoorSeparationOfConcernsExampleRefactor(
+  private val separationOfConcernsExampleRefactored = new PoorSeparationOfConcernsExampleRefactored(
     userService,
     auditingService,
     failureRecordingUserValidation,
@@ -118,7 +187,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
           .expects(user.userId.value, summarizationStartDate)
           .returns(Right(ActionSuccess))
 
-        separationOfConcernsExampleRefactor.sendSummarization(
+        separationOfConcernsExampleRefactored.sendSummarization(
           user.userId.value,
           OperatingMode1,
           maxDaysToProcess = maxDaysToProcess
@@ -139,7 +208,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(userId.value)
             .returns(Left(new RuntimeException("failed connecting to user service")))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, 33)
             .remapLeftToClass shouldBe
             Left(classOf[ServiceFailedInAttemptingUserRetrievalError])
@@ -150,7 +219,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(userId.value)
             .returns(Right(None))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, 33)
             .remapLeftToClass shouldBe
             Left(classOf[ExpectedUserNotFound])
@@ -168,7 +237,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(OperatingMode3, user)
             .returns(Left(InvalidNormalUserOperationModeError(user, OperatingMode3, true)))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, maxDaysToProcess)
             .remapLeftToClass shouldBe
             Left(classOf[FailedValidatingUserWithOperatingMode])
@@ -190,7 +259,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(user, maxDaysToProcess)
             .returns(Left(new RuntimeException("failed summarization")))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, maxDaysToProcess)
             .remapLeftToClass shouldBe
             Left(classOf[FailedSummarisingFinancialData])
@@ -221,7 +290,7 @@ class PoorSeparationOfConcernsExampleRefactorSpec
             .expects(summarisedDetails)
             .returns(Left(new RuntimeException("failed sending summarization")))
 
-          separationOfConcernsExampleRefactor
+          separationOfConcernsExampleRefactored
             .sendSummarization(userId.value, OperatingMode3, maxDaysToProcess)
             .remapLeftToClass shouldBe
             Left(classOf[FailedSendingSummarisedFinancialData])
@@ -230,3 +299,5 @@ class PoorSeparationOfConcernsExampleRefactorSpec
     }
   }
 }
+
+```
