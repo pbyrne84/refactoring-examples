@@ -110,19 +110,26 @@ There is a lot of literature on doing it more effectively as opportunistic desig
 
 #### Validating the user against the mode
 This is detailed here <br/>
-[ExtractingOutUserOperationValidation.md](docs/ExtractingOutUserOperationValidation.md)
+[ExtractingOutUserOperationValidation.md](docs/refactoringCodeToCleanUpTests/ExtractingOutUserOperationValidation.md)
 
 #### Extracting Out The Calculation For The Financial Details Summarization
 This is detailed here <br/>
-[ExtractingOutFinancialDetailsSummarization.md](docs/ExtractingOutFinancialDetailsSummarization.md)
-
+[ExtractingOutFinancialDetailsSummarization.md](docs/refactoringCodeToCleanUpTests/ExtractingOutFinancialDetailsSummarization.md)
 
 ### Final refactored main code and tests
 
 #### Code and tests before refactor
 This is detailed here <br/>
-[ProductionCodeWithTestBefore.md](docs/ProductionCodeWithTestBefore.md)
+[ProductionCodeWithTestBefore.md](docs/refactoringCodeToCleanUpTests/ProductionCodeWithTestBefore.md)
 
 #### Code and tests after refactor
 This is detailed here <br/>
-[ProductionCodeWithTestBefore.md](docs/ProductionCodeWithTestBefore.md)
+[ProductionCodeWithTestBefore.md](docs/refactoringCodeToCleanUpTests/ProductionCodeWithTestBefore.md)
+
+## A brief guide to some of the hard to own design patterns and why
+We are using design patterns whether we like it or not, they naturally occur as problems push solutions in certain 
+directions. Some of these approaches age like milk in the sun.
+[WhenGoodPatternsGoBad.md](docs/inheritance/WhenGoodPatternsGoBad.md)
+
+## Refactoring out inheritance for an easier time
+[TeaseApartInheritance.md](docs/inheritance/TeaseApartInheritance.md)

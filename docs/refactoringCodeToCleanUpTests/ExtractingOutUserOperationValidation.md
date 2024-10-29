@@ -167,7 +167,7 @@ major headache most people will avoid.
    its correctness. We have a hard time spotting any holes in it as too much is out of sight.
 
 4. Refactor out any dependencies/logic that hinder testing.
-   [UserOperationValidation.scala](../src/main/scala/refactoring_examples/extract_class/refactored_components/UserOperationValidation.scala)<br/>
+   [UserOperationValidation.scala](../../src/main/scala/refactoring_examples/extract_class/refactored_components/UserOperationValidation.scala)<br/>
 ```scala
  // note - making this static blocks dependencies being injected as it grows. Or it has to have the knowledge to instantiate the
  // dependencies. One of the reasons we do dependency injection is to limit the number of things that need to be known to use something.
@@ -232,7 +232,7 @@ major headache most people will avoid.
    take will be taken to the point of destruction as refactoring seems to be based on how much suffering someone can take before doing it. Headaches
    should not be normal, but we are brought up to work hard at the expense of smart. Smart people cause problems and ask questions that are tiring :)
 
-   The Test can be found at [UserOperationValidationSpec.scala](../src/test/scala/refactoring_examples/extract_class/refactored_components/UserOperationValidationSpec.scala).
+   The Test can be found at [UserOperationValidationSpec.scala](../../src/test/scala/refactoring_examples/extract_class/refactored_components/UserOperationValidationSpec.scala).
    NOTE: There is LIMITED looping, every test can ran and debugged easily. That is a goal, it is about the experience we leave each other, not
    just tick boxing things because we are told to do them.
 
@@ -242,7 +242,7 @@ major headache most people will avoid.
 
    The first one we will probably be dead way before the logic changes, seeming immortal.
    The business logic may need to change 5 minutes from now.</br>
-   [FailureRecordingUserValidation.scala](../src/main/scala/refactoring_examples/extract_class/refactored_components/FailureRecordingUserValidation.scala)
+   [FailureRecordingUserValidation.scala](../../src/main/scala/refactoring_examples/extract_class/refactored_components/FailureRecordingUserValidation.scala)
 ```scala
 class FailureRecordingUserValidation(
     userOperationValidation: UserOperationValidation,
@@ -297,4 +297,4 @@ class FailureRecordingUserValidation(
   }
 }
 ```
-8. The test for this is found at [FailureRecordingUserValidationSpec.scala](../src/test/scala/refactoring_examples/extract_class/refactored_components/FailureRecordingUserValidationSpec.scala)
+8. The test for this is found at [FailureRecordingUserValidationSpec.scala](../../src/test/scala/refactoring_examples/extract_class/refactored_components/FailureRecordingUserValidationSpec.scala)

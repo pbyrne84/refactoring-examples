@@ -2,7 +2,7 @@
 
 ## Production code after refactor
 
-[PoorSeparationOfConcernsExampleRefactored.scala](../src/main/scala/refactoring_examples/extract_class/PoorSeparationOfConcernsExampleRefactored.scala)
+[PoorSeparationOfConcernsExampleRefactored.scala](../../src/main/scala/refactoring_examples/extract_class/PoorSeparationOfConcernsExampleRefactored.scala)
 
 Note the call chain is linear, the only operations we are doing is a call and then an error remapping. We no longer 
 need any real complexity in the test. The complexity has been split up and refactored out into clear responsibilities
@@ -81,7 +81,7 @@ class PoorSeparationOfConcernsExampleRefactored(
 
 ## Test code after refactor
 
-[PoorSeparationOfConcernsExampleRefactoredSpec.scala](../src/test/scala/refactoring_examples/extract_class/PoorSeparationOfConcernsExampleRefactoredSpec.scala)
+[PoorSeparationOfConcernsExampleRefactoredSpec.scala](../../src/test/scala/refactoring_examples/extract_class/PoorSeparationOfConcernsExampleRefactoredSpec.scala)
 
 Again, simple enough not to require any complicated contexts, I personally never use them as they seem too much of a crutch for bad design
 and end up hiding everything in them making things much worse.
