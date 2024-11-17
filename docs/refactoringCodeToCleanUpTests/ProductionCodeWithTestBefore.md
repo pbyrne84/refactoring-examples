@@ -1,7 +1,7 @@
 # Production Code With Test Before 
 
 ## Production code before refactor
-[PoorSeparationOfConcernsExample.scala](../src/main/scala/refactoring_examples/extract_class/PoorSeparationOfConcernsExample.scala)
+[PoorSeparationOfConcernsExample.scala](../../src/main/scala/refactoring_examples/extract_class/PoorSeparationOfConcernsExample.scala)
 
 Formatting wise it looks fine, but basing things just on surface looks is not good.
 

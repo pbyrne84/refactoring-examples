@@ -67,7 +67,7 @@ or is taught by someone.
 ```
 ## Code once refactored
 
-[FinancialDetailsSummarization.scala](../src/main/scala/refactoring_examples/extract_class/refactored_components/FinancialDetailsSummarization.scala)
+[FinancialDetailsSummarization.scala](../../src/main/scala/refactoring_examples/extract_class/refactored_components/FinancialDetailsSummarization.scala)
 
 Once the original code was extracted out, and we start to feel like we have room to work on it, 
 we should take into account why things make us feel as our biology communicates to us, we can clean it up 
@@ -129,7 +129,7 @@ class FinancialDetailsSummarization(financialDetailsService: FinancialDetailsSer
 ```
 
 ## Test for refactored code
-[FinancialDetailsSummarizationSpec.scala](../src/test/scala/refactoring_examples/extract_class/refactored_components/FinancialDetailsSummarizationSpec.scala)
+[FinancialDetailsSummarizationSpec.scala](../../src/test/scala/refactoring_examples/extract_class/refactored_components/FinancialDetailsSummarizationSpec.scala)
 
 Easily readable and linear, all things are very easily referencable. Not complex contexts needed. As soon as a context 
 is added ( "should x" in new Test{} ), then we are inviting complexity. It is probably worth dropping them until 
