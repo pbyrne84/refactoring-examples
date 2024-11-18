@@ -124,7 +124,7 @@ This is detailed here <br/>
 
 #### Code and tests after refactor
 This is detailed here <br/>
-[ProductionCodeWithTestBefore.md](docs/refactoringCodeToCleanUpTests/ProductionCodeWithTestBefore.md)
+[ProductionCodeWithTestRefactored.md](docs/refactoringCodeToCleanUpTests/ProductionCodeWithTestRefactored.md)
 
 ## A brief guide to some of the hard to own design patterns and why
 We are using design patterns whether we like it or not, they naturally occur as problems push solutions in certain 
